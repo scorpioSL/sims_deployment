@@ -1,0 +1,54 @@
+version: '3.8'
+volumes:
+  database:
+
+
+services:
+  mysql:
+    image: mysql:5.7
+    hostname: mysql
+    restart: always
+    container_name: mysql_container
+    environment:
+      - MYSQL_DATABASE:sims
+      - MYSQL_USER:user
+      - MYSQL_PASSWORD:123123123
+      - MYSQL_ROOT_PASSWORD:123123123
+      - MYSQL_ALLOW_EMPTY_PASSWORD=1
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      timeout: 20s
+      retries: 10
+
+    ports:
+      - 3306:3306
+    expose:
+      - 3306
+    volumes:
+      - database:/var/lib/mysql
+  sims_api:
+    image: scorpiosl/sims_api
+    environment:
+      SPRING.DATASOURCE.URL: jdbc:mysql://mysql:3306/sims?createDatabaseIfNotExist=true
+      SPRING.DATASOURCE.USERNAME: root
+      SPRING.DATASOURCE.PASSWORD:
+    links:
+      - mysql
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: always
+    container_name: sims_api
+    ports:
+      - 8080:8080
+    expose:
+      - 8080
+  sims_ui:
+    image: scorpiosl/sims_ui
+    container_name: sims_ui
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - 80:80
+    expose:
+      - 80
